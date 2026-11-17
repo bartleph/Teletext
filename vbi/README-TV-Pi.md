@@ -114,7 +114,7 @@ pages appear.
 | Task | Command |
 |---|---|
 | Live log | `journalctl -u teletext -f` |
-| Restart after rebuilding ttxvbi | `sudo cp ttxvbi /usr/local/bin/ && sudo systemctl restart teletext` |
+| Restart after rebuilding ttxvbi | `sudo install ttxvbi /usr/local/bin/ && sudo systemctl restart teletext` |
 | Stop / start | `sudo systemctl stop teletext` / `start` |
 | Disable at boot | `sudo systemctl disable teletext` |
 
