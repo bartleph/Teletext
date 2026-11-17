@@ -1,0 +1,26 @@
+# systemd unit for a Raspberry Pi feeding a real TV over composite video.
+# Install:  sudo cp teletext.service /etc/systemd/system/
+#           sudo systemctl daemon-reload
+#           sudo systemctl enable --now teletext
+#
+# Expects ttxvbi, teletext and tvctl in /usr/local/bin and the server's
+# pages folder at /mnt/ttxpages (see README-TV-Pi.md).
+
+[Unit]
+Description=Teletext on composite video (ttxvbi + raspi-teletext)
+Wants=network-online.target
+After=network-online.target remote-fs.target
+
+[Service]
+Type=simple
+# Wait as long as needed for the pages folder (network share may be slow at boot)
+TimeoutStartSec=0
+ExecStartPre=/bin/sh -c 'until ls /mnt/ttxpages/P100.tti >/dev/null 2>&1; do sleep 5; done'
+ExecStartPre=/usr/local/bin/tvctl on
+ExecStart=/bin/sh -c '/usr/local/bin/ttxvbi -d /mnt/ttxpages | /usr/local/bin/teletext -'
+ExecStopPost=/usr/local/bin/tvctl off
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
