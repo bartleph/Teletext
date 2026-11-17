@@ -1,0 +1,100 @@
+name: Release
+
+# Pushing a tag such as v1.2.0 builds every platform and publishes a GitHub release.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write        # create the release and upload the files
+
+jobs:
+  # Linux (amd64, arm64, armv7) and Windows (amd64) are cross-compiled on one Linux runner
+  build-cross:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-amd64
+            packages: g++
+          - target: linux-arm64
+            packages: g++-aarch64-linux-gnu
+          - target: linux-armv7
+            packages: g++-arm-linux-gnueabihf
+          # Raspberry Pi 1 and Zero (ARMv6): built inside a toolchain image, see the next step
+          - target: linux-armv6
+            packages: g++
+          - target: windows-amd64
+            packages: g++-mingw-w64-x86-64 zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ${{ matrix.packages }}
+
+      - name: Build and package
+        if: matrix.target != 'linux-armv6'
+        run: bash scripts/build-release.sh "${{ matrix.target }}" "${{ github.ref_name }}"
+
+      # Ubuntu's ARM compilers make ARMv7 code and libraries, which crash on a Pi 1 or Zero,
+      # so this one builds inside dockcross's ARMv6 toolchain (the image sets $CXX)
+      - name: Build and package (ARMv6 toolchain image)
+        if: matrix.target == 'linux-armv6'
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work dockcross/linux-armv6:20260928-b67e766 \
+            bash scripts/build-release.sh linux-armv6 "${{ github.ref_name }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: dist/*.tar.gz dist/*.zip
+          if-no-files-found: error
+
+  # macOS on Apple silicon, built natively
+  build-macos:
+    name: Build macos-arm64
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and package
+        run: bash scripts/build-release.sh macos-arm64 "${{ github.ref_name }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    needs: [build-cross, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: assets
+        run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          # tags like v1.0.0-rc1 are marked as pre-releases
+          PRE=""; case "$TAG" in *-*) PRE="--prerelease" ;; esac
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" assets/* --clobber --repo "$REPO"
+          else
+            gh release create "$TAG" assets/* --repo "$REPO" --title "$TAG" --generate-notes $PRE
+          fi

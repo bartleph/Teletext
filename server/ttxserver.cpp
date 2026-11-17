@@ -71,7 +71,11 @@
   #define INVALID_SOCKET (-1)
   #define SOCKET_ERROR   (-1)
   #define closesocket    close
-  #define SEND_FLAGS     MSG_NOSIGNAL
+  #ifdef MSG_NOSIGNAL
+    #define SEND_FLAGS   MSG_NOSIGNAL
+  #else
+    #define SEND_FLAGS   0           /* macOS has no MSG_NOSIGNAL; main() ignores SIGPIPE instead */
+  #endif
 #endif
 
 #include <stdio.h>

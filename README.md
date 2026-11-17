@@ -51,6 +51,36 @@ The **server** and **news feed** build on Windows *and* on Linux / Raspberry Pi,
 can run on a headless machine. The **client** and **editor** are Windows programs that
 connect to the server over the network.
 
+## Downloads (releases)
+
+Pushing a tag that starts with `v` (for example `git tag v1.0.0 && git push origin v1.0.0`)
+makes GitHub Actions build every platform and attach the packages to a GitHub release
+(`.github/workflows/release.yml`). A tag with a dash in it, such as `v1.0.0-rc1`, is marked
+as a pre-release.
+
+| Package | For |
+|---|---|
+| `teletext-<tag>-windows-amd64.zip` | Windows 64-bit: server, feeds, **client and editor** |
+| `teletext-<tag>-linux-amd64.tar.gz` | Linux on PCs and servers |
+| `teletext-<tag>-linux-arm64.tar.gz` | 64-bit Raspberry Pi OS and other arm64 Linux |
+| `teletext-<tag>-linux-armv7.tar.gz` | 32-bit Raspberry Pi OS on a Pi 2, 3, 4 or Zero 2 |
+| `teletext-<tag>-linux-armv6.tar.gz` | Raspberry Pi 1 and Zero (and Zero W). Runs on later Pis too, just not as fast |
+| `teletext-<tag>-macos-arm64.tar.gz` | Macs with Apple silicon |
+
+Each package unpacks into folders laid out like this repository (`server/`, `feed/`, ...),
+with the settings files and demo pages, so the `pagesdir=../server/pages` settings work as
+they are. `SHA256SUMS.txt` is attached to the release too.
+
+* The Windows client and editor are Windows programs, so only the Windows package has them.
+  The other packages have the server and the feed programs.
+* Linux packages are statically linked, so they run on any distribution. The feed programs
+  still call `curl`, which must be installed.
+* The programs are not code-signed. Windows SmartScreen may warn about the `.exe` files
+  (More info, then Run anyway). On a Mac, remove the download quarantine first:
+  `xattr -dr com.apple.quarantine teletext-*` and run the server from a terminal.
+* To build a package yourself: `scripts/build-release.sh <target> <version>`. The script lists the
+  compilers each target needs.
+
 ## Building in Dev-C++
 
 Each program is a single .cpp file, and each gets its own project.
