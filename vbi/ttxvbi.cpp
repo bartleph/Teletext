@@ -116,7 +116,7 @@ static void Emit(const unsigned char *pkt)
     if (g_limit > 0) g_limit--;
     if (g_rate > 0 && g_sent % 10 == 0) {               /* crude pacing, 10 packets at a time */
         struct timespec ts;
-        long ns = 10L * 1000000000L / g_rate;
+        long long ns = 10LL * 1000000000LL / g_rate;
         ts.tv_sec = ns / 1000000000L; ts.tv_nsec = ns % 1000000000L;
         nanosleep(&ts, NULL);
     }
