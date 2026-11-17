@@ -39,6 +39,7 @@ clients (on the same PC or across the LAN) connect to it and browse them like a 
 | `feed\ttxfeed.cpp` | News feed program: turns RSS feeds (e.g. BBC News) into pages |
 | `feed\ttxfeed.cfg` | Feed settings: which feeds go on which pages |
 | `flights\ttxflights.cpp` | Airport arrivals/departures boards from a flight-data API |
+| `vbi\ttxvbi.cpp` | Teletext packet stream for a real TV (Raspberry Pi composite out) |
 | `tv\ttxtv.cpp` | TV listings pages from Freeview-EPG |
 | `tv\ttxtv.cfg` | TV settings: channels, regions, pages |
 | `weather\ttxweather.cpp` | Weather pages from Open-Meteo (free, no key) |
@@ -255,6 +256,47 @@ time):
 * The feeds carry headlines and a one-line summary only. The full stories are on the BBC
   website. The pages say "Source: BBC News". This is fine for personal use at home, but
   don't republish the pages publicly.
+
+## On a real TV (ttxvbi)
+
+`ttxvbi` sends your pages to a real TV's own teletext decoder (the Text button on the
+remote). It reads the server's pages folder and writes a stream of teletext packets to
+standard output. On a Raspberry Pi you pipe that into
+[raspi-teletext](https://github.com/ali1234/raspi-teletext), which puts the packets into the
+vertical blanking interval of the Pi's **composite video** output:
+
+```
+g++ -O2 -o ttxvbi ttxvbi.cpp
+./ttxvbi -d ../server/pages | sudo teletext -
+```
+
+Connect the Pi's composite output to the TV (a composite-to-SCART lead works) and press
+Text. Needs a TV that decodes analogue teletext: mostly CRTs and older flat screens. Many
+current TVs have dropped it, and Freeview/DVB teletext is a different thing (see below).
+Check raspi-teletext's own README for which Pi models and video settings it supports.
+
+* Every page and subpage in the folder is sent, so everything the server, editor, `ttxfeed`,
+  `ttxweather` and the others write is on air. Pages are reloaded when the files change.
+* The header shows the service name (`name=` from `ttxserver.cfg`, or `-n NAME`), the page
+  number, the date and a live clock. Carousel pages rotate every `CT` seconds.
+* Fastext links are sent, so the TV's red/green/yellow/cyan buttons work. Cyan is the
+  fourth link, as in the web client; the TV's own index key uses the sixth.
+* While there is breaking news (`pages/newsflash.txt`, written by `ttxfeed`), the bottom
+  row of every page becomes the NEWSFLASH strip with the headline scrolling past. This
+  replaces that page's Fastext labels while the flash is on.
+* Options: `-d pagesdir`, `-n NAME`, `-r packets/sec` to limit the speed (normally the
+  pipe sets the pace), `-c count` to stop after that many packets, and `-p page` to
+  dump a page as text (below).
+* **Checking a page without a TV:** `./ttxvbi -d ../server/pages -p 100` prints page 100
+  as it would go on air: the packets are built exactly as for the TV, then decoded again
+  and drawn as a 40 x 25 grid. It shows the header, rows that are blank and so not sent,
+  the Fastext links, the newsflash row if one is on, and whether every Hamming and parity
+  check passed. A carousel page prints each subpage in turn. Exit code 0 means OK, 1 means
+  no such page, 2 means the decode found errors. Colour and graphics control codes show
+  as blank cells, as they do on a real teletext screen.
+* Teletext on air is a one-way broadcast: the TV picks pages out of the cycle, so a page
+  takes a moment to appear after you key it in, and more pages make the cycle longer.
+* Linux only. It does not touch DVB (Freeview) teletext, which needs a DVB modulator.
 
 ## TV listings (ttxtv)
 
