@@ -425,6 +425,14 @@ flashing text, subpages and the newsflash strip, and it updates once a second.
   change page, or tap a page number or the newsflash strip. On a PC the keyboard works as
   in the Windows client.
 * **Smooth** switches between soft, TV-like scaling and sharp pixels.
+* **CRT filter (optional):** the **CRT** button, or the **C** key, adds scanlines, a soft
+  glow and dark corners for an old-TV look. It is off by default and remembered; `?crt=1`
+  or `?crt=0` on the address forces it.
+* **Keyboard mode:** press **K** to hide the keypad so the picture fills the window, and
+  **K** again to bring it back. **F** toggles full screen. The choice is remembered, or
+  force it with `?pad=0` (no keypad) or `?pad=1` on the address, e.g. `http://pi:8080/?pad=0`.
+  Keys: 0-9 page number, Up/Down next/previous page, Left/Right subpage, F1-F4 Fastext,
+  I or F5 index, R reveal, H hold, Esc dismiss newsflash.
 * Turn a phone on its side for a bigger picture, with the buttons alongside.
 * **Make it an app:** see *Installing it as an app (PWA)* below. Even over plain http,
   Chrome's menu › **Add to Home screen** gives a home-screen shortcut.

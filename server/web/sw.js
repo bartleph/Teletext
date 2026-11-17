@@ -4,7 +4,7 @@
  * instantly and still starts when the server can't be reached.
  * Page data (/api/...) always comes live from the server - never cached.
  */
-const VERSION = "ttx-v2";
+const VERSION = "ttx-v4";
 const SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable.png", "edit.html"];
 
 self.addEventListener("install", event => {
